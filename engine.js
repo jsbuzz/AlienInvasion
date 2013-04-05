@@ -22,6 +22,12 @@
             clearTimeout(id);
         };
 }());
+
+
+var BoardItem = Class(function(){}).extend({
+  step : function(){},
+  draw : function(){}
+});
   
 
 var Game = new function() {                                                                  
@@ -54,20 +60,20 @@ var Game = new function() {
   
 
   // Handle Input
-  var KEY_CODES = { 37:'left', 39:'right', 32 :'fire' };
+  var KEY_CODES = { 37:'left', 39:'right', 32 :'fire', 38: 'up', 40: 'down' };
   this.keys = {};
 
   this.setupInput = function() {
     window.addEventListener('keydown',function(e) {
-      if(KEY_CODES[event.keyCode]) {
-       Game.keys[KEY_CODES[event.keyCode]] = true;
+      if(KEY_CODES[e.keyCode]) {
+       Game.keys[KEY_CODES[e.keyCode]] = true;
        e.preventDefault();
       }
     },false);
 
     window.addEventListener('keyup',function(e) {
-      if(KEY_CODES[event.keyCode]) {
-       Game.keys[KEY_CODES[event.keyCode]] = false; 
+      if(KEY_CODES[e.keyCode]) {
+       Game.keys[KEY_CODES[e.keyCode]] = false; 
        e.preventDefault();
       }
     },false);
@@ -138,7 +144,8 @@ var Game = new function() {
 
 
 var SpriteSheet = new function() {
-  this.map = { }; 
+  this.map = { };
+  this.opacity = 1;
 
   this.load = function(spriteData,callback) { 
     this.map = spriteData;
@@ -147,9 +154,11 @@ var SpriteSheet = new function() {
     this.image.src = 'images/sprites.png';
   };
 
-  this.draw = function(ctx,sprite,x,y,frame) {
+  this.draw = function(ctx,sprite,x,y,frame,opacity) {
     var s = this.map[sprite];
     if(!frame) frame = 0;
+    
+    ctx.globalAlpha = opacity || 0;
     ctx.drawImage(this.image,
                      s.sx + frame * s.w, 
                      s.sy, 
@@ -170,6 +179,7 @@ var TitleScreen = function TitleScreen(title,subtitle,callback) {
 
   this.draw = function(ctx) {
     ctx.fillStyle = "#FFFFFF";
+    ctx.globalAlpha = 1;
 
     ctx.font = "bold 40px bangers";
     var measure = ctx.measureText(title);  
@@ -273,7 +283,9 @@ var GameBoard = function() {
 
 };
 
-var Sprite = function() { };
+var Sprite = function() {
+  this.opacity = 1;
+};
 
 Sprite.prototype.setup = function(sprite,props) {
   this.sprite = sprite;
@@ -292,7 +304,7 @@ Sprite.prototype.merge = function(props) {
 };
 
 Sprite.prototype.draw = function(ctx) {
-  SpriteSheet.draw(ctx,this.sprite,this.x,this.y,this.frame);
+  SpriteSheet.draw(ctx,this.sprite,this.x,this.y,this.frame,this.opacity);
 };
 
 Sprite.prototype.hit = function(damage) {
@@ -394,6 +406,8 @@ var TouchControls = function() {
     e.preventDefault();
     Game.keys['left'] = false;
     Game.keys['right'] = false;
+    Game.keys['up'] = false;
+    Game.keys['down'] = false;
     for(var i=0;i<e.targetTouches.length;i++) {
       touch = e.targetTouches[i];
       x = touch.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
@@ -442,7 +456,7 @@ var GamePoints = function() {
     var i = pointsLength - txt.length, zeros = "";
     while(i-- > 0) { zeros += "0"; }
 
-    ctx.fillText(zeros + txt,10,20);
+    ctx.fillText(zeros + txt + " | " + (Game.playerShip.lives < 1 && '0' || Game.playerShip.lives),10,20);
     ctx.restore();
 
   };
